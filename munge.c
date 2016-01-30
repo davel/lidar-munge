@@ -4,11 +4,12 @@
 #include <malloc.h>
 #include <inttypes.h>
 #include <float.h>
+#include <strings.h>
 #include "tiffio.h"
 
 const int tilesize = 2000;
 
-const int x_tile_start = 21;
+const int x_tile_start = 22;
 const int y_tile_start = 40;
 const int x_tile_count =10;
 const int y_tile_count =11;
@@ -47,37 +48,44 @@ int main(int argc, char* argv[]) {
 
             printf("%s\n", filename);
             FILE *asc = fopen(filename, "r");
-            assert(asc);
 
-            assert(fscanf(asc, "ncols %d\n", &m_width));
-            assert(fscanf(asc, "nrows %d\n", &m_height));
-            assert(fscanf(asc, "xllcorner %d\n", &xllcorner));
-            assert(fscanf(asc, "yllcorner %d\n", &yllcorner));
-            assert(fscanf(asc, "cellsize %lf\n", &cell_size));
-            assert(fscanf(asc, "NODATA_value %lf\n", &nodata));
+            if (asc != NULL) {
+                free(filename);
+                assert(asc != NULL);
 
-            assert(m_width == tilesize);
-            assert(m_height == tilesize);
+                assert(fscanf(asc, "ncols %d\n", &m_width));
+                assert(fscanf(asc, "nrows %d\n", &m_height));
+                assert(fscanf(asc, "xllcorner %d\n", &xllcorner));
+                assert(fscanf(asc, "yllcorner %d\n", &yllcorner));
+                assert(fscanf(asc, "cellsize %lf\n", &cell_size));
+                assert(fscanf(asc, "NODATA_value %lf\n", &nodata));
 
-            for (int y=0; y<m_height; y++) {
-                for (int x=0; x<m_width; x++) {
-                    double f;
-                    if (x == (m_width-1)) {
-                        assert(fscanf(asc, "%lf\n", &f));
-                    }
-                    else {
-                        assert(fscanf(asc, "%lf ", &f));
-                    }
-                    if (f == nodata) {
-                        dbuf[x+m_width*y] = 0;
-                    }
-                    else {
-                        float scaled = (f+100.0)*20.0;
-                        assert(scaled>=0);
-                        assert(scaled<65536);
-                        dbuf[x+m_width*y] = (uint16_t) scaled;
+                assert(m_width == tilesize);
+                assert(m_height == tilesize);
+
+                for (int y=0; y<m_height; y++) {
+                    for (int x=0; x<m_width; x++) {
+                        double f;
+                        if (x == (m_width-1)) {
+                            assert(fscanf(asc, "%lf\n", &f));
+                        }
+                        else {
+                            assert(fscanf(asc, "%lf ", &f));
+                        }
+                        if (f == nodata) {
+                            dbuf[x+m_width*y] = 0;
+                        }
+                        else {
+                            float scaled = (f+100.0)*20.0;
+                            assert(scaled>=0);
+                            assert(scaled<65536);
+                            dbuf[x+m_width*y] = (uint16_t) scaled;
+                        }
                     }
                 }
+            }
+            else {
+                bzero(dbuf, sizeof(uint16_t) * m_width * m_height);
             }
 
             // Write the information to the file
