@@ -9,10 +9,10 @@
 
 const int tilesize = 2000;
 
-const int x_tile_start = 22;
+const int x_tile_start = 23;
 const int y_tile_start = 40;
-const int x_tile_count =10;
-const int y_tile_count =11;
+const int x_tile_count =1;
+const int y_tile_count =4;
 
 int main(int argc, char* argv[]) {
     TIFF *output_image;
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
             }
 
             // Write the information to the file
-            assert(TIFFWriteTile(output_image, dbuf, tilex - x_tile_start, tiley - y_tile_start, 0, 0));
+            assert(TIFFWriteTile(output_image, dbuf, (tilex - x_tile_start)*tilesize, (tiley - y_tile_start)*tilesize, 0, 0));
             // Close the file
         }
     }
