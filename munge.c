@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
             }
 
             // Write the information to the file
-            assert(TIFFWriteTile(output_image, dbuf, (tilex - x_tile_start)*tilesize, (tiley - y_tile_start)*tilesize, 0, 0));
+            assert(TIFFWriteTile(output_image, dbuf, (tilex - x_tile_start)*tilesize, (y_tile_count + y_tile_start - tiley -1)*tilesize, 0, 0));
             // Close the file
         }
     }
