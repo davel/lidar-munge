@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
     double nodata = -1;
     int xllcorner;
     int yllcorner;
+    float whitepoint[2] = { 0.0, 65535.0 };
 
     // Open the TIFF file
     if((output_image = TIFFOpen("foo.tiff", "w")) == NULL){
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]) {
     TIFFSetField(output_image, TIFFTAG_TILELENGTH, tilesize);
     TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 16);
     TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 1);
+    TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, 1); // black is zero
 //    TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
  
     TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE);
@@ -76,7 +78,10 @@ int main(int argc, char* argv[]) {
                             dbuf[x+m_width*y] = 0;
                         }
                         else {
-                            float scaled = (f+100.0)*20.0;
+                            float scaled = (f+100.0)*40.0;
+                            if (scaled > whitepoint[0]) {
+                                whitepoint[0] = scaled;
+                            }
                             assert(scaled>=0);
                             assert(scaled<65536);
                             dbuf[x+m_width*y] = (uint16_t) scaled;
@@ -94,6 +99,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    TIFFSetField(output_image, TIFFTAG_WHITEPOINT, &whitepoint);
     TIFFClose(output_image);
     return 0;
 }
