@@ -7,12 +7,12 @@
 #include <strings.h>
 #include "tiffio.h"
 
-const int tilesize = 2000;
+const int tilesize = 1000;
 
-const int x_tile_start = 23;
-const int y_tile_start = 40;
-const int x_tile_count =1;
-const int y_tile_count =4;
+const int x_tile_start = 17;
+const int y_tile_start = 51;
+const int x_tile_count =2;
+const int y_tile_count =2;
 
 int main(int argc, char* argv[]) {
     TIFF *output_image;
@@ -22,7 +22,6 @@ int main(int argc, char* argv[]) {
     double nodata = -1;
     int xllcorner;
     int yllcorner;
-    float whitepoint[2] = { 0.0, 65535.0 };
 
     // Open the TIFF file
     if((output_image = TIFFOpen("foo.tiff", "w")) == NULL){
@@ -30,22 +29,22 @@ int main(int argc, char* argv[]) {
     }
     TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, tilesize * x_tile_count);
     TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, tilesize * y_tile_count);
-    TIFFSetField(output_image, TIFFTAG_TILEWIDTH, tilesize);
-    TIFFSetField(output_image, TIFFTAG_TILELENGTH, tilesize);
+    assert(TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, tilesize * y_tile_count)==1);
     TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 16);
     TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 1);
     TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, 1); // black is zero
-//    TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
  
-    TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE);
+//    TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE);
 
-    uint16_t *dbuf = malloc(sizeof(uint16_t)*tilesize*tilesize);
-    assert(dbuf != NULL);
+    double *fbuf = malloc(sizeof(double) * tilesize * x_tile_count * y_tile_count * tilesize);
+    assert(fbuf != NULL);
+    double min =  DBL_MAX;
+    double max = -DBL_MAX;
 
     for (int tilex = x_tile_start; tilex < x_tile_start+x_tile_count; tilex++) {
         for (int tiley = y_tile_start; tiley < y_tile_start+y_tile_count; tiley++) {
             char *filename;
-            assert(asprintf(&filename, "/home/davel/Downloads/lidar/tq%02d%02d_DSM_50cm.asc", tilex, tiley));
+            assert(asprintf(&filename, "/home/davel/Downloads/lidar/tq%02d%02d_DTM_1m.asc", tilex, tiley));
             assert(filename);
 
             printf("%s\n", filename);
@@ -67,39 +66,41 @@ int main(int argc, char* argv[]) {
 
                 for (int y=0; y<m_height; y++) {
                     for (int x=0; x<m_width; x++) {
-                        double f;
+                        double *f = &fbuf[(tilesize*x_tile_count)*(y+tilesize*(tiley-y_tile_start)) +tilesize*(tilex-x_tile_start) + x];
                         if (x == (m_width-1)) {
-                            assert(fscanf(asc, "%lf\n", &f));
+                            assert(fscanf(asc, "%lf\n", f));
                         }
                         else {
-                            assert(fscanf(asc, "%lf ", &f));
+                            assert(fscanf(asc, "%lf ", f));
                         }
-                        if (f == nodata) {
-                            dbuf[x+m_width*y] = 0;
+                        if (*f == nodata) {
+                            *f = 0;
                         }
-                        else {
-                            float scaled = (f+100.0)*40.0;
-                            if (scaled > whitepoint[0]) {
-                                whitepoint[0] = scaled;
-                            }
-                            assert(scaled>=0);
-                            assert(scaled<65536);
-                            dbuf[x+m_width*y] = (uint16_t) scaled;
-                        }
+                        if (*f < min) min = *f;
+                        if (*f > max) max = *f;
                     }
                 }
+                fclose(asc);
             }
-            else {
-                bzero(dbuf, sizeof(uint16_t) * m_width * m_height);
-            }
-
             // Write the information to the file
-            assert(TIFFWriteTile(output_image, dbuf, (tilex - x_tile_start)*tilesize, (y_tile_count + y_tile_start - tiley -1)*tilesize, 0, 0));
             // Close the file
         }
     }
 
-    TIFFSetField(output_image, TIFFTAG_WHITEPOINT, &whitepoint);
+    double scale = 65535.0/(max-min);
+
+    printf("%lf %lf %lf\n", scale, min, max);
+
+    uint16_t *dbuf = malloc(sizeof(uint16_t) * tilesize * x_tile_count * tilesize * y_tile_count);
+    assert(dbuf != NULL);
+
+    for (int y=0; y<(tilesize * y_tile_count); y++) {
+        for (int x=0; x<(tilesize * x_tile_count); x++) {
+            dbuf[x+y*tilesize*x_tile_count] = (uint16_t) (fbuf[x+y*tilesize*x_tile_count] - min)*scale;
+        }
+    }
+
+    TIFFWriteEncodedStrip(output_image, 0, dbuf, sizeof(uint16_t) * tilesize * x_tile_count * tilesize * y_tile_count);
     TIFFClose(output_image);
     return 0;
 }
