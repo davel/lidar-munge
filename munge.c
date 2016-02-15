@@ -10,7 +10,7 @@
 const int tilesize = 1000;
 
 const int x_tile_start = 17;
-const int y_tile_start = 51;
+const int y_tile_start = 50;
 const int x_tile_count =2;
 const int y_tile_count =2;
 
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     for (int tilex = x_tile_start; tilex < x_tile_start+x_tile_count; tilex++) {
         for (int tiley = y_tile_start; tiley < y_tile_start+y_tile_count; tiley++) {
             char *filename;
-            assert(asprintf(&filename, "/home/davel/Downloads/lidar/tq%02d%02d_DTM_1m.asc", tilex, tiley));
+            assert(asprintf(&filename, "/home/davel/Downloads/lidar/tq%02d%02d_DSM_1m.asc", tilex, tiley));
             assert(filename);
 
             printf("%s\n", filename);
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
 
                 for (int y=0; y<m_height; y++) {
                     for (int x=0; x<m_width; x++) {
-                        double *f = &fbuf[(tilesize*x_tile_count)*(y+tilesize*(tiley-y_tile_start)) +tilesize*(tilex-x_tile_start) + x];
+                        double *f = &fbuf[(tilesize*x_tile_count)*((tilesize-y-1)+tilesize*(tiley-y_tile_start)) +tilesize*(tilex-x_tile_start) + x];
                         if (x == (m_width-1)) {
                             assert(fscanf(asc, "%lf\n", f));
                         }
