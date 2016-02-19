@@ -6,6 +6,7 @@
 #include <float.h>
 #include <strings.h>
 #include "tiffio.h"
+#include <stdbool.h>
 
 const int tilesize = 1000;
 
@@ -15,13 +16,15 @@ const int easting_count =2;
 const int northing_count =2;
 
 int main(int argc, char* argv[]) {
-    double *fbuf = malloc(sizeof(double) * tilesize * easting_count * tilesize * northing_count);
-    assert(fbuf != NULL);
-    double min =  DBL_MAX;
-    double max = -DBL_MAX;
-
     int image_width = tilesize * easting_count;
     int image_length = tilesize * northing_count;
+
+    double *fbuf = malloc(sizeof(double) * image_width * image_length);
+    assert(fbuf != NULL);
+    bool   *mbuf = malloc(sizeof(bool)   * image_width * image_length);
+    assert(mbuf != NULL);
+    double min =  DBL_MAX;
+    double max = -DBL_MAX;
 
     for (int easting = easting_start; easting < easting_start+easting_count; easting++) {
         for (int northing = northing_start; northing < northing_start+northing_count; northing++) {
@@ -58,6 +61,7 @@ int main(int argc, char* argv[]) {
                         int easting_full  = tilesize * (easting-easting_start) + col;
                         int northing_full = tilesize * (northing-northing_start+1)-row-1;
                         double *f = &fbuf[northing_full * image_width + easting_full];
+                        bool *m = &mbuf[northing_full * image_width + easting_full];
                         if (col == (m_width-1)) {
                             assert(fscanf(asc, "%lf\n", f));
                         }
@@ -65,10 +69,14 @@ int main(int argc, char* argv[]) {
                             assert(fscanf(asc, "%lf ", f));
                         }
                         if (*f == nodata) {
-                            *f = -1;
+                            *f = 0;
+                            *m = false;
                         }
-                        if (*f < min) min = *f;
-                        if (*f > max) max = *f;
+                        else {
+                            *m = true;
+                            if (*f < min) min = *f;
+                            if (*f > max) max = *f;
+                        }
                     }
                 }
                 fclose(asc);
@@ -86,28 +94,29 @@ int main(int argc, char* argv[]) {
     assert(TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, image_width)==1);
     assert(TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, image_length)==1);
     assert(TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 16)==1);
-    assert(TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 1)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 2)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)==1);
     assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_LEFTBOT)==1);
-    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
+//    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
 
     double scale = 65535.0/(max-min);
 
     printf("%lf %lf %lf\n", scale, min, max);
 
-    uint16_t *dbuf = malloc(sizeof(uint16_t)*image_width);
+    uint16_t *dbuf = malloc(sizeof(uint16_t)*image_width*2);
     assert(dbuf != NULL);
 
     for (int y=0; y<image_length; y++) {
         for (int x=0; x<image_width; x++) {
-            dbuf[x] = (uint16_t) (fbuf[x+y*image_width] - min)*scale;
+            dbuf[x*2] = (uint16_t) (fbuf[x+y*image_width] - min)*scale;
+            dbuf[x*2+1] = mbuf[x+y*image_width] ? 65535 : 0;
         }
         assert(TIFFWriteScanline(output_image, dbuf, y, 0)==1);
-
     }
 
     free(fbuf);
+    free(mbuf);
     TIFFClose(output_image);
     return 0;
 }
