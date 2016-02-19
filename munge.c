@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     assert(TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 2)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)==1);
-    assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_LEFTBOT)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT)==1);
     assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
 
     double scale = 65535.0/(max-min);
@@ -108,9 +108,10 @@ int main(int argc, char* argv[]) {
     assert(dbuf != NULL);
 
     for (int y=0; y<image_length; y++) {
+        int northing = image_length - y - 1;
         for (int x=0; x<image_width; x++) {
-            dbuf[x*2] = (uint16_t) (fbuf[x+y*image_width] - min)*scale;
-            dbuf[x*2+1] = mbuf[x+y*image_width] ? 65535 : 0;
+            dbuf[x*2] = (uint16_t) (fbuf[x+northing*image_width] - min)*scale;
+            dbuf[x*2+1] = mbuf[x+northing*image_width] ? 65535 : 0;
         }
         assert(TIFFWriteScanline(output_image, dbuf, y, 0)==1);
     }
