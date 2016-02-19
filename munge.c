@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
                             assert(fscanf(asc, "%lf ", f));
                         }
                         if (*f == nodata) {
-                            *f = 0;
+                            *f = -1;
                         }
                         if (*f < min) min = *f;
                         if (*f > max) max = *f;
@@ -78,36 +78,36 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    double scale = 65535.0/(max-min);
-
-    printf("%lf %lf %lf\n", scale, min, max);
-
-    uint16_t *dbuf = malloc(sizeof(uint16_t) * image_width * image_length);
-    assert(dbuf != NULL);
-
-    for (int y=0; y<image_length; y++) {
-        for (int x=0; x<image_width; x++) {
-            dbuf[x+y*image_width] = (uint16_t) (fbuf[x+y*image_width] - min)*scale;
-        }
-    }
-
-    free(fbuf);
-    TIFF *output_image;
+   TIFF *output_image;
     // Open the TIFF file
     if((output_image = TIFFOpen("foo.tiff", "w")) == NULL){
         assert(0);
     }
-    TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, image_width);
-    TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, image_length);
-    assert(TIFFSetField(output_image, TIFFTAG_ROWSPERSTRIP, image_length)==1);
-    TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 16);
-    TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 1);
-    TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+    assert(TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, image_width)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, image_length)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 16)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 1)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_LEFTBOT)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
 
-    TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_LEFTBOT);
-    TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE);
+    double scale = 65535.0/(max-min);
 
-    TIFFWriteEncodedStrip(output_image, 0, dbuf, sizeof(uint16_t) * image_width * image_length);
+    printf("%lf %lf %lf\n", scale, min, max);
+
+    uint16_t *dbuf = malloc(sizeof(uint16_t)*image_width);
+    assert(dbuf != NULL);
+
+    for (int y=0; y<image_length; y++) {
+        for (int x=0; x<image_width; x++) {
+            dbuf[x] = (uint16_t) (fbuf[x+y*image_width] - min)*scale;
+        }
+        assert(TIFFWriteScanline(output_image, dbuf, y, 0)==1);
+
+    }
+
+    free(fbuf);
     TIFFClose(output_image);
     return 0;
 }
