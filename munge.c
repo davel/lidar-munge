@@ -110,8 +110,17 @@ int main(int argc, char* argv[]) {
     for (int y=0; y<image_length; y++) {
         int northing = image_length - y - 1;
         for (int x=0; x<image_width; x++) {
-            dbuf[x*2] = (uint16_t) (fbuf[x+northing*image_width] - min)*scale;
-            dbuf[x*2+1] = mbuf[x+northing*image_width] ? 65535 : 0;
+            if (mbuf[x+northing*image_width]) {
+                int scaled = (fbuf[x+northing*image_width] - min)*scale;
+                assert(scaled >= 0);
+                assert(scaled <= 65535);
+                dbuf[x*2] = (uint16_t) scaled;
+                dbuf[x*2+1] = 65535;
+            }
+            else {
+                dbuf[x*2] = 0;
+                dbuf[x*2+1] = 0;
+            }
         }
         assert(TIFFWriteScanline(output_image, dbuf, y, 0)==1);
     }
