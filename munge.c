@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
     assert(TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)==1);
     assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_LEFTBOT)==1);
-//    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
 
     double scale = 65535.0/(max-min);
 
