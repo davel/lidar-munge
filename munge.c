@@ -8,23 +8,20 @@
 #include "tiffio.h"
 #include <stdbool.h>
 
-const int tilesize = 1000;
-
 const int easting_start = 17;
 const int northing_start = 50;
 const int easting_count =2;
 const int northing_count =2;
 
 int main(int argc, char* argv[]) {
-    int image_width = tilesize * easting_count;
-    int image_length = tilesize * northing_count;
+    double *fbuf = NULL;
+    bool   *mbuf = NULL;
+    int     image_width=0;
+    int     image_length=0;
+    double  min =  DBL_MAX;
+    double  max = -DBL_MAX;
 
-    double *fbuf = malloc(sizeof(double) * image_width * image_length);
-    assert(fbuf != NULL);
-    bool   *mbuf = malloc(sizeof(bool)   * image_width * image_length);
-    assert(mbuf != NULL);
-    double min =  DBL_MAX;
-    double max = -DBL_MAX;
+    int tilesize = 0;
 
     for (int easting = easting_start; easting < easting_start+easting_count; easting++) {
         for (int northing = northing_start; northing < northing_start+northing_count; northing++) {
@@ -53,6 +50,19 @@ int main(int argc, char* argv[]) {
                 assert(fscanf(asc, "cellsize %lf\n", &cell_size));
                 assert(fscanf(asc, "NODATA_value %lf\n", &nodata));
 
+                if (tilesize == 0) {
+                    tilesize = m_width;
+                    image_width = tilesize * easting_count;
+                    image_length = tilesize * northing_count;
+                    assert(image_width > 0);
+                    assert(image_length > 0);
+                    fbuf = malloc(sizeof(double) * image_width * image_length);
+                    assert(fbuf != NULL);
+                    mbuf = malloc(sizeof(bool)   * image_width * image_length);
+                    assert(mbuf != NULL);
+                }
+
+                assert(tilesize > 0);
                 assert(m_width == tilesize);
                 assert(m_height == tilesize);
 
