@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 
                 if (tilesize == 0) {
                     tilesize = m_width;
-                    image_width = tilesize * easting_count;
+                    image_width  = tilesize * easting_count;
                     image_length = tilesize * northing_count;
                     assert(image_width > 0);
                     assert(image_length > 0);
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 assert(tilesize > 0);
-                assert(m_width == tilesize);
+                assert(m_width  == tilesize);
                 assert(m_height == tilesize);
 
                 for (int row=0; row<m_height; row++) {
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
                         int easting_full  = tilesize * (easting-easting_start) + col;
                         int northing_full = tilesize * (northing-northing_start+1)-row-1;
                         double *f = &fbuf[northing_full * image_width + easting_full];
-                        bool *m = &mbuf[northing_full * image_width + easting_full];
+                        bool *m   = &mbuf[northing_full * image_width + easting_full];
                         if (col == (m_width-1)) {
                             assert(fscanf(asc, "%lf\n", f));
                         }
