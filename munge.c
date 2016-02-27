@@ -123,38 +123,38 @@ int main(int argc, char* argv[]) {
     }
     assert(TIFFSetField(output_image, TIFFTAG_IMAGEWIDTH, image_width)==1);
     assert(TIFFSetField(output_image, TIFFTAG_IMAGELENGTH, image_length)==1);
-    assert(TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 16)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_BITSPERSAMPLE, 32)==1);
     assert(TIFFSetField(output_image, TIFFTAG_SAMPLESPERPIXEL, 4)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB)==1);
     assert(TIFFSetField(output_image, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG)==1);
     assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT)==1);
-    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_LZMA)==1);
+    assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
 
-    double scale = 65535.0/(max-min);
+    double scale = 1.0/(max-min);
 
     printf("%lf %lf %lf\n", scale, min, max);
 
-    uint16_t *dbuf = malloc(sizeof(uint16_t)*image_width*4);
+    float *dbuf = malloc(sizeof(float)*image_width*4);
     assert(dbuf != NULL);
 
     for (int y=0; y<image_length; y++) {
         int northing = image_length - y - 1;
         for (int x=0; x<image_width; x++) {
             if (mbuf[x+northing*image_width]) {
-                int tscaled = (tbuf[x+northing*image_width] - min)*scale;
-                int sscaled = (sbuf[x+northing*image_width] - min)*scale;
-                assert(tscaled >= 0 && tscaled <= 65535 && sscaled >= 0 && sscaled <= 65535);
+                float tscaled = (tbuf[x+northing*image_width] - min)*scale;
+                float sscaled = (sbuf[x+northing*image_width] - min)*scale;
 
-                dbuf[x*4+0] = (uint16_t) sscaled;
-                dbuf[x*4+1] = (uint16_t) sscaled;
-                dbuf[x*4+2] = (uint16_t) tscaled;
-                dbuf[x*4+3] = 65535;
+                dbuf[x*4+0] = sscaled;
+                dbuf[x*4+1] = sscaled;
+                dbuf[x*4+2] = tscaled;
+                dbuf[x*4+3] = 1.0;
             }
             else {
-                dbuf[x*4+0] = 0;
-                dbuf[x*4+1] = 0;
-                dbuf[x*4+2] = 0;
-                dbuf[x*4+3] = 0;
+                dbuf[x*4+0] = 0.0;
+                dbuf[x*4+1] = 0.0;
+                dbuf[x*4+2] = 0.0;
+                dbuf[x*4+3] = 0.0;
             }
         }
         assert(TIFFWriteScanline(output_image, dbuf, y, 0)==1);
