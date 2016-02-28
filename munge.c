@@ -15,13 +15,13 @@ const int easting_count =2;
 const int northing_count =2;
 
 int main(int argc, char* argv[]) {
-    double *tbuf = NULL;
-    double *sbuf = NULL;
+    float *tbuf = NULL;
+    float *sbuf = NULL;
     bool   *mbuf = NULL;
     int     image_width=0;
     int     image_length=0;
-    double  min =  DBL_MAX;
-    double  max = -DBL_MAX;
+    float  min =  DBL_MAX;
+    float  max = -DBL_MAX;
 
     int tilesize = 0;
 
@@ -45,8 +45,8 @@ int main(int argc, char* argv[]) {
 
                     int m_height = -1;
                     int m_width  = -1;
-                    double cell_size = -1;
-                    double nodata = -1;
+                    float cell_size = -1;
+                    float nodata = -1;
                     int xllcorner;
                     int yllcorner;
 
@@ -54,8 +54,8 @@ int main(int argc, char* argv[]) {
                     assert(fscanf(asc, "nrows %d\n", &m_height));
                     assert(fscanf(asc, "xllcorner %d\n", &xllcorner));
                     assert(fscanf(asc, "yllcorner %d\n", &yllcorner));
-                    assert(fscanf(asc, "cellsize %lf\n", &cell_size));
-                    assert(fscanf(asc, "NODATA_value %lf\n", &nodata));
+                    assert(fscanf(asc, "cellsize %f\n", &cell_size));
+                    assert(fscanf(asc, "NODATA_value %f\n", &nodata));
 
                     if (tilesize == 0) {
                         tilesize = m_width;
@@ -63,9 +63,9 @@ int main(int argc, char* argv[]) {
                         image_length = tilesize * northing_count;
                         assert(image_width > 0);
                         assert(image_length > 0);
-                        tbuf = malloc(sizeof(double) * image_width * image_length);
+                        tbuf = malloc(sizeof(float) * image_width * image_length);
                         assert(tbuf != NULL);
-                        sbuf = malloc(sizeof(double) * image_width * image_length);
+                        sbuf = malloc(sizeof(float) * image_width * image_length);
                         assert(sbuf != NULL);
                         mbuf = malloc(sizeof(bool)   * image_width * image_length);
                         assert(mbuf != NULL);
@@ -80,14 +80,14 @@ int main(int argc, char* argv[]) {
                         for (int col=0; col<m_width; col++) {
                             int easting_full  = tilesize * (easting-easting_start) + col;
                             int northing_full = tilesize * (northing-northing_start+1)-row-1;
-                            double *f = chan == 0 ? &sbuf[northing_full * image_width + easting_full]
-                                                  : &tbuf[northing_full * image_width + easting_full];
+                            float *f = chan == 0 ? &sbuf[northing_full * image_width + easting_full]
+                                                 : &tbuf[northing_full * image_width + easting_full];
                             bool *m   = &mbuf[northing_full * image_width + easting_full];
                             if (col == (m_width-1)) {
-                                assert(fscanf(asc, "%lf\n", f));
+                                assert(fscanf(asc, "%f\n", f));
                             }
                             else {
-                                assert(fscanf(asc, "%lf ", f));
+                                assert(fscanf(asc, "%f ", f));
                             }
                             if (*f == nodata) {
                                 *f = 0;
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     assert(TIFFSetField(output_image, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT)==1);
     assert(TIFFSetField(output_image, TIFFTAG_COMPRESSION, COMPRESSION_DEFLATE)==1);
 
-    double scale = 1.0/(max-min);
+    float scale = 1.0/(max-min);
 
     printf("%lf %lf %lf\n", scale, min, max);
 
